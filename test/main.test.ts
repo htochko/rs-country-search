@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { debounce } from '../src/main';
+import { debounce, searchCountries, HttpError } from '../src/main';
 
 const DELAY_TIME = 300;
 
@@ -68,5 +68,75 @@ describe('debounce', () => {
     vi.advanceTimersByTime(1);
     expect(callback).toHaveBeenCalledTimes(1);
     expect(callback).toHaveBeenCalledWith(3);
+  });
+});
+
+describe('searchCountries function (FIRST principles)', () => {
+  const mockFetch = vi.fn();
+
+  beforeEach(() => {
+    // F (Fast) & R (Repeatable): Replace fetch with mock
+    vi.stubGlobal('fetch', mockFetch);
+  });
+
+  afterEach(() => {
+    // I (Isolated): clear mocks
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('should successfully fetch and return countries data on ok response', async () => {
+    const mockCountries = [{ name: 'Poland', capital: 'Warsaw' }];
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockCountries,
+    });
+
+    const controller = new AbortController();
+    const result = await searchCountries('Poland', controller.signal);
+
+    // S (Self-validating): check fetch and output
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('Poland'),
+      expect.objectContaining({ signal: controller.signal })
+    );
+    expect(result).toEqual(mockCountries);
+  });
+
+  it('should throw HttpError when response.ok is false (e.g. 404 or 500)', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+    });
+
+    const controller = new AbortController();
+
+    // HttpError theown for invalid country input
+    await expect(searchCountries('Unknown', controller.signal)).rejects.toThrow(HttpError);
+
+    try {
+      await searchCountries('Unknown', controller.signal);
+    } catch (error) {
+      expect(error).toBeInstanceOf(HttpError);
+      expect((error as HttpError).status).toBe(404);
+    }
+  });
+
+  it('should correctly pass AbortSignal to fetch options', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [],
+    });
+
+    const controller = new AbortController();
+    await searchCountries('test', controller.signal);
+
+    const callArgs = mockFetch.mock.calls[0];
+    const options = callArgs[1];
+
+    expect(options.signal).toBe(controller.signal);
   });
 });
