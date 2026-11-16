@@ -10,3 +10,10 @@ export interface Country {
   languages: Record<string, string> | string[];
   currencies: Record<string, { name: string; symbol: string }> | string[];
 }
+
+export interface CountryOutput {
+  name: string;
+  capital: string;
+  flagUrl: string;
+  population: number;
+}

@@ -1,4 +1,4 @@
-import { Country } from './types';
+import { Country, CountryOutput } from './types';
 
 const API_ENDPOINT = import.meta.env.VITE_RS_ENPOINT;
 const RESPONSE_TIME = 2000;
@@ -65,6 +65,11 @@ export async function searchCountries(
   }
 }
 
-export function mapCountryResponse(raw: unknown): Country {
-  throw new Error('Not implemented');
+export function mapCountryResponse(raw: Partial<Country>): CountryOutput {
+  return {
+    name: raw.name as unknown as string,
+    capital: raw.capital && raw.capital.length > 0 ? raw.capital[0] : 'N/A',
+    flagUrl: raw.flags?.svg || (raw.flags?.png as unknown as string),
+    population: raw.population as unknown as number,
+  };
 }

@@ -175,7 +175,7 @@ describe('searchCountries function (FIRST principles)', () => {
 describe('mapCountryResponse function (FIRST principles)', () => {
   it('should correctly map raw CountryDto to clean domain model', () => {
     const rawDto: Partial<Country> = {
-      name: { common: 'Poland' },
+      name: 'Poland',
       capital: ['Warsaw'],
       flags: { svg: 'https://flagcdn.com/pl.svg', png: 'https://flagcdn.com/w320/pl.png' },
       population: 37950000,
@@ -194,7 +194,7 @@ describe('mapCountryResponse function (FIRST principles)', () => {
 
   it('should handle missing optional fields gracefully (e.g. no capital)', () => {
     const rawDtoWithoutCapital: Partial<Country> = {
-      name: { common: 'Antarctica' },
+      name: 'Antarctica',
       // capital absent
       flags: { svg: 'https://flagcdn.com/aq.svg', png: 'https://flagcdn.com/w320/aq.png' },
       population: 0,
