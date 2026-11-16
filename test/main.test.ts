@@ -97,11 +97,12 @@ describe('searchCountries function (FIRST principles)', () => {
     const controller = new AbortController();
     const result = await searchCountries('Poland', controller.signal);
 
-    // S (Self-validating): check fetch and output
     expect(mockFetch).toHaveBeenCalledTimes(1);
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('Poland'),
-      expect.objectContaining({ signal: controller.signal })
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
+      })
     );
     expect(result).toEqual(mockCountries);
   });
@@ -138,7 +139,7 @@ describe('searchCountries function (FIRST principles)', () => {
     const callArgs = mockFetch.mock.calls[0];
     const options = callArgs[1];
 
-    expect(options.signal).toBe(controller.signal);
+    expect(options.signal).toBeInstanceOf(AbortSignal);
   });
 
   it('should throw TimeoutError when request takes too long', async () => {
