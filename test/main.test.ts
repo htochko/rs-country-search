@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { debounce, searchCountries, HttpError } from '../src/main';
+import { debounce, searchCountries, HttpError, mapCountryResponse } from '../src/main';
+import { Country } from '../src/types';
 
 const DELAY_TIME = 300;
 const TIME_EDGE = 2000;
@@ -168,5 +169,44 @@ describe('searchCountries function (FIRST principles)', () => {
     const promise = searchCountries('Poland', controller.signal);
 
     await expect(promise).rejects.toThrow();
+  });
+});
+
+describe('mapCountryResponse function (FIRST principles)', () => {
+  it('should correctly map raw CountryDto to clean domain model', () => {
+    const rawDto: Partial<Country> = {
+      name: { common: 'Poland' },
+      capital: ['Warsaw'],
+      flags: { svg: 'https://flagcdn.com/pl.svg', png: 'https://flagcdn.com/w320/pl.png' },
+      population: 37950000,
+    };
+
+    const result = mapCountryResponse(rawDto);
+
+    // S (Self-validating): proprty map match
+    expect(result).toEqual({
+      name: 'Poland',
+      capital: 'Warsaw',
+      flagUrl: 'https://flagcdn.com/pl.svg',
+      population: 37950000,
+    });
+  });
+
+  it('should handle missing optional fields gracefully (e.g. no capital)', () => {
+    const rawDtoWithoutCapital: Partial<Country> = {
+      name: { common: 'Antarctica' },
+      // capital absent
+      flags: { svg: 'https://flagcdn.com/aq.svg', png: 'https://flagcdn.com/w320/aq.png' },
+      population: 0,
+    };
+
+    const result = mapCountryResponse(rawDtoWithoutCapital);
+
+    expect(result).toEqual({
+      name: 'Antarctica',
+      capital: 'N/A',
+      flagUrl: 'https://flagcdn.com/aq.svg',
+      population: 0,
+    });
   });
 });

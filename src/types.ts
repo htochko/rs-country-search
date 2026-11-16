@@ -1,6 +1,6 @@
 export interface Country {
-  name: string;
-  capital: string;
+  name: string | { common: string };
+  capital?: string | string[];
   region: string;
   population: number;
   flags: {
