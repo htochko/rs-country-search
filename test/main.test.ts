@@ -26,13 +26,13 @@ describe('debounce', () => {
     // debounced function shouldn't be called at once
     expect(callback).not.toHaveBeenCalled();
 
-    // Проматываем время почти до конца
+    // check time slowly less than param applied
     vi.advanceTimersByTime(DELAY_TIME - 1);
     expect(callback).not.toHaveBeenCalled();
 
-    // Проходим оставшийся 1мс
+    // add 1ms that left
     vi.advanceTimersByTime(1);
-    // S (Self-validating): Четкая проверка результата
+    // S (Self-validating): check result
     expect(callback).toHaveBeenCalledTimes(1);
   });
 

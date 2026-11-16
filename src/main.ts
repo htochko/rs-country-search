@@ -6,7 +6,17 @@ export function debounce<F extends (...args: Parameters<F>) => ReturnType<F>>(
   fn: F,
   delay: number
 ): (...args: Parameters<F>) => void {
-  throw new Error('Not implemented');
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  return (...args: Parameters<F>): void => {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+    }
+
+    timeoutId = setTimeout(() => {
+      fn(...args);
+    }, delay);
+  };
 }
 
 export function searchCountries(query: URLSearchParams, signal?: Promise<Country[]>) {
