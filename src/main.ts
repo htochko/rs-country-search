@@ -1,6 +1,7 @@
 import { Country } from './types';
 
 const API_ENDPOINT = import.meta.env.VITE_RS_ENPOINT;
+const RESPONSE_TIME = 2000;
 
 export class HttpError extends Error {
   public status: number;
@@ -30,20 +31,38 @@ export function debounce<F extends (...args: Parameters<F>) => ReturnType<F>>(
   };
 }
 
-export async function searchCountries(query: string, signal?: AbortSignal): Promise<Country[]> {
+export async function searchCountries(
+  query: string,
+  customSignal?: AbortSignal
+): Promise<Country[]> {
   const url = `${API_ENDPOINT}/name/${encodeURIComponent(query)}`;
 
-  const response = await fetch(url, { signal });
+  const timeoutSignal = AbortSignal.timeout(RESPONSE_TIME);
+  const signal = customSignal ? AbortSignal.any([customSignal, timeoutSignal]) : timeoutSignal;
 
-  if (!response.ok) {
-    throw new HttpError(
-      response.status,
-      `Failed to fetch countries: ${response.status} ${response.statusText}`
-    );
+  try {
+    const response = await fetch(url, { signal });
+
+    if (!response.ok) {
+      throw new HttpError(
+        response.status,
+        `Failed to fetch countries: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const data: Country[] = await response.json();
+    return data;
+  } catch (error) {
+    if (error instanceof DOMException) {
+      if (error.name === 'TimeoutError') {
+        throw new Error('Request timed out');
+      }
+      if (error.name === 'AbortError') {
+        throw error;
+      }
+    }
+    throw error;
   }
-
-  const data: Country[] = await response.json();
-  return data;
 }
 
 export function mapCountryResponse(raw: unknown): Country {
