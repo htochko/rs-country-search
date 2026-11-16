@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { debounce, searchCountries, HttpError } from '../src/main';
 
 const DELAY_TIME = 300;
+const TIME_EDGE = 2000;
 
 describe('Initial Setup', () => {
   it('should pass initial test', () => {
@@ -138,5 +139,33 @@ describe('searchCountries function (FIRST principles)', () => {
     const options = callArgs[1];
 
     expect(options.signal).toBe(controller.signal);
+  });
+
+  it('should throw TimeoutError when request takes too long', async () => {
+    // long respponse
+    mockFetch.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          // request longer than timeout
+          setTimeout(resolve, TIME_EDGE);
+        })
+    );
+
+    // too short timeout
+    const timeoutSignal = AbortSignal.timeout(TIME_EDGE / 10);
+
+    await expect(searchCountries('Poland', timeoutSignal)).rejects.toThrow();
+  });
+
+  it('should handle user AbortError correctly when signal is aborted', async () => {
+    const controller = new AbortController();
+
+    controller.abort();
+
+    mockFetch.mockRejectedValueOnce(new DOMException('The operation was aborted', 'AbortError'));
+
+    const promise = searchCountries('Poland', controller.signal);
+
+    await expect(promise).rejects.toThrow();
   });
 });
