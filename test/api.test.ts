@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { debounce, searchCountries, HttpError, mapCountryResponse } from '../src/main';
+import { debounce, searchCountries, HttpError, mapCountryResponse } from '../src/api';
 import { Country } from '../src/types';
 
 const DELAY_TIME = 300;
@@ -91,7 +91,22 @@ describe('searchCountries function (FIRST principles)', () => {
   });
 
   it('should successfully fetch and return countries data on ok response', async () => {
-    const mockCountries = [{ name: 'Poland', capital: 'Warsaw' }];
+    const mockCountries = [
+      {
+        name: 'Poland',
+        capital: 'Warsaw',
+        population: 37950802,
+        flags: { svg: 'https://flagcdn.com/pl.svg' },
+      },
+    ];
+    const mockCountriesOutput = [
+      {
+        name: 'Poland',
+        capital: 'Warsaw',
+        population: 37950802,
+        flagUrl: 'https://flagcdn.com/pl.svg',
+      },
+    ];
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -108,7 +123,7 @@ describe('searchCountries function (FIRST principles)', () => {
         signal: expect.any(AbortSignal),
       })
     );
-    expect(result).toEqual(mockCountries);
+    expect(result).toEqual(mockCountriesOutput);
   });
 
   it('should throw HttpError when response.ok is false (e.g. 404 or 500)', async () => {
@@ -179,9 +194,9 @@ describe('mapCountryResponse function (FIRST principles)', () => {
   it('should correctly map raw CountryDto to clean domain model', () => {
     const rawDto: Partial<Country> = {
       name: 'Poland',
-      capital: ['Warsaw'],
+      capital: 'Warsaw',
       flags: { svg: 'https://flagcdn.com/pl.svg', png: 'https://flagcdn.com/w320/pl.png' },
-      population: 37950000,
+      population: 37950802,
     };
 
     const result = mapCountryResponse(rawDto);
@@ -191,7 +206,7 @@ describe('mapCountryResponse function (FIRST principles)', () => {
       name: 'Poland',
       capital: 'Warsaw',
       flagUrl: 'https://flagcdn.com/pl.svg',
-      population: 37950000,
+      population: 37950802,
     });
   });
 
@@ -225,7 +240,7 @@ it('should handle race conditions and ignore/abort outdated slower requests', as
     setTimeout(() => {
       resolve({
         ok: true,
-        json: async () => [{ name: 'Poland', capital: ['Warsaw'] }],
+        json: async () => [{ name: 'Poland', capital: 'Warsaw' }],
       });
     }, TIME_EDGE / 2);
   });
@@ -233,7 +248,7 @@ it('should handle race conditions and ignore/abort outdated slower requests', as
   // Request without delay
   const fastPromise = Promise.resolve({
     ok: true,
-    json: async () => [{ name: 'Portugal', capital: ['Lisbon'] }],
+    json: async () => [{ name: 'Portugal', capital: 'Lisbon' }],
   });
 
   // Inverse requests

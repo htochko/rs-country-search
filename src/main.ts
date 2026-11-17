@@ -1,75 +1,84 @@
-import { Country, CountryOutput } from './types';
+// main.ts — Application entry point
 
-const API_ENDPOINT = import.meta.env.VITE_RS_ENPOINT;
-const RESPONSE_TIME = 2000;
+import { searchCountries } from './api';
+import { renderCountries, openCountryModal, setupModalListeners } from './ui';
+import { CountryOutput } from './types';
 
-export class HttpError extends Error {
-  public status: number;
+// DOM Elements selection
+const searchInput = document.getElementById('search-input') as HTMLInputElement;
+const countriesContainer = document.getElementById('countries-container') as HTMLElement;
 
-  constructor(status: number, message: string = `HTTP Error: ${status}`) {
-    super(message);
-    this.name = 'HttpError';
-    this.status = status;
-    Object.setPrototypeOf(this, HttpError.prototype);
+let currentAbortController: AbortController | null = null;
+let lastQuery = '';
+let cachedCountries: CountryOutput[] = [];
+
+// Initialize modal listeners on app startup
+setupModalListeners();
+
+// Main search execution handler
+async function executeSearch(query: string): Promise<void> {
+  lastQuery = query;
+
+  // Clear results if input is empty
+  if (!query.trim()) {
+    renderCountries(countriesContainer, [], false, null);
+    return;
   }
-}
 
-export function debounce<F extends (...args: Parameters<F>) => ReturnType<F>>(
-  fn: F,
-  delay: number
-): (...args: Parameters<F>) => void {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  // Abort previous ongoing request before starting a new one
+  if (currentAbortController) {
+    currentAbortController.abort();
+  }
 
-  return (...args: Parameters<F>): void => {
-    if (timeoutId !== null) {
-      clearTimeout(timeoutId);
-    }
+  currentAbortController = new AbortController();
 
-    timeoutId = setTimeout(() => {
-      fn(...args);
-    }, delay);
-  };
-}
-
-export async function searchCountries(
-  query: string,
-  customSignal?: AbortSignal
-): Promise<Country[]> {
-  const url = `${API_ENDPOINT}/name/${encodeURIComponent(query)}`;
-
-  const timeoutSignal = AbortSignal.timeout(RESPONSE_TIME);
-  const signal = customSignal ? AbortSignal.any([customSignal, timeoutSignal]) : timeoutSignal;
+  // Show loading state
+  renderCountries(countriesContainer, [], true, null);
 
   try {
-    const response = await fetch(url, { signal });
-
-    if (!response.ok) {
-      throw new HttpError(
-        response.status,
-        `Failed to fetch countries: ${response.status} ${response.statusText}`
-      );
+    const results = await searchCountries(query, currentAbortController.signal);
+    cachedCountries = results;
+    // Render successful results
+    renderCountries(countriesContainer, results, false, null);
+  } catch (err: unknown) {
+    if (!(err instanceof Error)) {
+      renderCountries(countriesContainer, [], false, 'An unknown error occurred.');
+      return;
     }
-
-    const data: Country[] = await response.json();
-    return data;
-  } catch (error) {
-    if (error instanceof DOMException) {
-      if (error.name === 'TimeoutError') {
-        throw new Error('Request timed out');
-      }
-      if (error.name === 'AbortError') {
-        throw error;
-      }
+    // Ignore user-initiated abort errors
+    if (err instanceof Error && err.name === 'AbortError') {
+      return;
     }
-    throw error;
+    // Render error state with message
+    renderCountries(countriesContainer, [], false, err.message || 'Failed to fetch countries.');
   }
 }
 
-export function mapCountryResponse(raw: Partial<Country>): CountryOutput {
-  return {
-    name: raw.name as unknown as string,
-    capital: raw.capital && raw.capital.length > 0 ? raw.capital[0] : 'N/A',
-    flagUrl: raw.flags?.svg || (raw.flags?.png as unknown as string),
-    population: raw.population as unknown as number,
-  };
-}
+// Event listener for user typing (search input)
+searchInput.addEventListener('input', (event) => {
+  const query = (event.target as HTMLInputElement).value;
+  executeSearch(query);
+});
+
+// Event delegation for dynamic elements inside container (Retry button & Country cards)
+countriesContainer.addEventListener('click', (event) => {
+  const target = event.target as HTMLElement;
+
+  // Handle click on "Retry" button
+  if (target.id === 'retry-btn') {
+    if (lastQuery) {
+      executeSearch(lastQuery);
+    }
+    return;
+  }
+
+  // Handle click on country card to open modal detail view
+  const card = target.closest('.country-card');
+  if (card) {
+    const countryName = card.getAttribute('data-country-name');
+    const country = cachedCountries.find((c) => c.name === countryName);
+    if (country) {
+      openCountryModal(country);
+    }
+  }
+});
