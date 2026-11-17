@@ -5,7 +5,9 @@
     "test": "vitest run",
     "prepare": "husky",
     "lint-staged": "lint-staged",
-    "build": "tsc"
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "deploy": "gh-pages -d dist"
   },
   "lint-staged": {
     "*.{ts,tsx,js,json,css,md}": [
@@ -17,6 +19,7 @@
     "@eslint/js": "^9.39.5",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
+    "gh-pages": "^6.3.0",
     "husky": "^9.1.7",
     "jiti": "^2.7.0",
     "lint-staged": "^17.6.1",
