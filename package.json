@@ -1,0 +1,35 @@
+{
+  "scripts": {
+    "lint": "eslint",
+    "format": "prettier --write \"src/**/*.{ts,js,html,css}\"",
+    "test": "vitest run",
+    "prepare": "husky",
+    "lint-staged": "lint-staged",
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "deploy": "gh-pages -d dist"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,json,css,md}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "gh-pages": "^6.3.0",
+    "husky": "^9.1.7",
+    "jiti": "^2.7.0",
+    "lint-staged": "^17.6.1",
+    "prettier": "^3.10.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.73.0",
+    "vitest": "^3.2.7"
+  },
+  "allowScripts": {
+    "fsevents@2.3.3": true,
+    "esbuild@0.28.2": true
+  }
+}
