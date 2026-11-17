@@ -4,9 +4,22 @@ import { searchCountries } from './api';
 import { renderCountries, openCountryModal, setupModalListeners } from './ui';
 import { CountryOutput } from './types';
 
-// DOM Elements selection
-const searchInput = document.getElementById('search-input') as HTMLInputElement;
-const countriesContainer = document.getElementById('countries-container') as HTMLElement;
+const appContainer = document.createElement('div');
+appContainer.id = 'app-root';
+
+const searchInput = document.createElement('input');
+searchInput.id = 'search-input';
+searchInput.type = 'text';
+searchInput.placeholder = 'Search for a country...';
+
+const countriesContainer = document.createElement('div');
+countriesContainer.id = 'countries-container';
+
+appContainer.appendChild(searchInput);
+appContainer.appendChild(countriesContainer);
+document.body.appendChild(appContainer);
+
+console.log('test');
 
 let currentAbortController: AbortController | null = null;
 let lastQuery = '';
