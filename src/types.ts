@@ -1,5 +1,5 @@
 export interface Country {
-  name: string | { common: string };
+  name: string;
   capital?: string | string[];
   region: string;
   population: number;

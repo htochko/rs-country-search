@@ -11,9 +11,12 @@ describe('Initial Setup', () => {
   });
 });
 
+const mockFetch = vi.fn();
+
 describe('debounce', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    vi.stubGlobal('fetch', mockFetch);
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -209,4 +212,53 @@ describe('mapCountryResponse function (FIRST principles)', () => {
       population: 0,
     });
   });
+});
+
+// Separate test with inversed resolves
+it('should handle race conditions and ignore/abort outdated slower requests', async () => {
+  // Start Abort controllers
+  const controller1 = new AbortController();
+  const controller2 = new AbortController();
+
+  // Slow request
+  const slowPromise = new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        ok: true,
+        json: async () => [{ name: 'Poland', capital: ['Warsaw'] }],
+      });
+    }, TIME_EDGE / 2);
+  });
+
+  // Request without delay
+  const fastPromise = Promise.resolve({
+    ok: true,
+    json: async () => [{ name: 'Portugal', capital: ['Lisbon'] }],
+  });
+
+  // Inverse requests
+  mockFetch
+    .mockImplementationOnce((url, options) => {
+      // abort simulation
+      options?.signal?.addEventListener('abort', () => {
+        controller1.abort();
+      });
+      return slowPromise;
+    })
+    .mockImplementationOnce(() => fastPromise);
+
+  // start slow request
+  const p1 = searchCountries('Pol', controller1.signal);
+  p1.catch(() => {});
+  // mock typing next symbol
+  // reset request and put new
+  controller1.abort();
+  const p2 = searchCountries('Port', controller2.signal);
+
+  // check second request respond
+  const result2 = await p2;
+  expect(result2[0].name).toBe('Portugal');
+
+  // first request responds with AbortError
+  await expect(p1).rejects.toThrow();
 });
